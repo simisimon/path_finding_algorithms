@@ -1,29 +1,30 @@
 import sys
+from typing import List
+
 import pygame
 
 # COLORS
 WALL_COLOR = (96, 96, 96)
 START_COLOR = (255, 255, 51)
 TARGET_COLOR = (0, 0, 0)
-
 PATH_COLOR = (51, 153, 255)
 QUEUED_COLOR = (0, 153, 0)
 VISITED_COLOR = (153, 255, 153)
 BACKGROUND_COLOR = (169, 169, 169)
 
 # Constants
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 1000
-COLUMNS = 25
-ROWS = 25
-MARGIN = 2
+width = 1000
+height = 1000
+columns = 25
+rows = 25
+margin = 2
 
-BOX_WIDTH = WINDOW_WIDTH // COLUMNS
-BOX_HEIGHT = WINDOW_HEIGHT // ROWS
+box_width = width // columns
+box_height = height // rows
 
-GRID = []
-QUEUE = []
-PATH = []
+grid = []
+queue = []
+path = []
 
 
 class Box:
@@ -40,32 +41,32 @@ class Box:
 
     def set_neighbours(self):
         if self.x > 0:
-            self.neighbours.append(GRID[self.x - 1][self.y])
-        if self.x < COLUMNS - 1:
-            self.neighbours.append(GRID[self.x + 1][self.y])
+            self.neighbours.append(grid[self.x - 1][self.y])
+        if self.x < columns - 1:
+            self.neighbours.append(grid[self.x + 1][self.y])
 
         if self.y > 0:
-            self.neighbours.append(GRID[self.x][self.y - 1])
-        if self.y < ROWS - 1:
-            self.neighbours.append(GRID[self.x][self.y + 1])
+            self.neighbours.append(grid[self.x][self.y - 1])
+        if self.y < rows - 1:
+            self.neighbours.append(grid[self.x][self.y + 1])
 
     def draw(self, window, color):
         """Draw the box."""
-        pygame.draw.rect(window, color, (self.x * BOX_WIDTH, self.y * BOX_HEIGHT, BOX_WIDTH - MARGIN, BOX_HEIGHT - MARGIN))
+        pygame.draw.rect(window, color, (self.x * box_width, self.y * box_height, box_width - margin, box_height - margin))
 
 
 # Define grid
-for i in range(COLUMNS):
+for i in range(columns):
     arr = []
-    for j in range(ROWS):
+    for j in range(rows):
         arr.append(Box(i, j))
-    GRID.append(arr)
+    grid.append(arr)
 
 
 # Set neighbours
-for i in range(COLUMNS):
-    for j in range(ROWS):
-        GRID[i][j].set_neighbours()
+for i in range(columns):
+    for j in range(rows):
+        grid[i][j].set_neighbours()
 
 
 def main() -> None:
@@ -78,7 +79,7 @@ def main() -> None:
     target_box = None
     start_box = None
 
-    window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    window = pygame.display.set_mode((width, height))
     pygame.display.set_caption("Path Algorithm")
 
     while True:
@@ -93,20 +94,20 @@ def main() -> None:
 
                 # Define start box
                 if event.button == 1 and not start_defined:
-                    i = x // BOX_WIDTH
-                    j = y // BOX_HEIGHT
-                    start_box = GRID[i][j]
+                    i = x // box_width
+                    j = y // box_height
+                    start_box = grid[i][j]
                     start_box.start = True
                     start_defined = True
                     start_box.visited = True
-                    QUEUE.append(start_box)
+                    queue.append(start_box)
                     print("Start defined.")
 
                 # Define target box
                 if event.button == 3 and start_defined and not target_defined:
-                    i = x // BOX_WIDTH
-                    j = y // BOX_HEIGHT
-                    target_box = GRID[i][j]
+                    i = x // box_width
+                    j = y // box_height
+                    target_box = grid[i][j]
                     target_box.target = True
                     target_defined = True
                     print("Target defined.")
@@ -118,10 +119,10 @@ def main() -> None:
 
                 # Define walls
                 if event.buttons[2] and start_defined and target_defined:
-                    i = x // BOX_WIDTH
-                    j = y // BOX_HEIGHT
-                    if not GRID[i][j].start and not GRID[i][j].target:
-                        GRID[i][j].wall = True
+                    i = x // box_width
+                    j = y // box_height
+                    if not grid[i][j].start and not grid[i][j].target:
+                        grid[i][j].wall = True
 
             # Start Searching
             if event.type == pygame.KEYDOWN and start_defined and target_defined:
@@ -133,20 +134,20 @@ def main() -> None:
 
         # Run dijkstra path finding algorithm:
         if start_searching:
-            if len(QUEUE) > 0 and searching:
-                current_box = QUEUE.pop(0)
+            if len(queue) > 0 and searching:
+                current_box = queue.pop(0)
                 current_box.visited = True
                 if current_box == target_box:
                     searching = True
                     while current_box.prior != start_box:
-                        PATH.append(current_box.prior)
+                        path.append(current_box.prior)
                         current_box = current_box.prior
                 else:
                     for neighbour in current_box.neighbours:
                         if not neighbour.queued and not neighbour.wall:
                             neighbour.prior = current_box
                             neighbour.queued = True
-                            QUEUE.append(neighbour)
+                            queue.append(neighbour)
 
             else:
                 if searching:
@@ -155,16 +156,16 @@ def main() -> None:
 
         window.fill((0, 0, 0))
 
-        for i in range(COLUMNS):
-            for j in range(ROWS):
-                box = GRID[i][j]
+        for i in range(columns):
+            for j in range(rows):
+                box = grid[i][j]
                 box.draw(window, BACKGROUND_COLOR)
 
                 if box.queued:
                     box.draw(window, QUEUED_COLOR)
                 if box.visited:
                     box.draw(window, VISITED_COLOR)
-                if box in PATH:
+                if box in path:
                     box.draw(window, PATH_COLOR)
                 if box.start:
                     box.draw(window, START_COLOR)
