@@ -1,15 +1,15 @@
 import sys
-
 import pygame
 
 # COLORS
-DARK_GREY = (96, 96, 96)
-GREY = (169, 169, 169)
-LIGHT_GREEN = (144, 238, 144)
-RED = (255, 0, 0)
-GREEN = (51, 255, 51)
-LIGHT_BLUE = (173, 216, 230)
-YELLOW = (255, 255, 0)
+WALL_COLOR = (96, 96, 96)
+START_COLOR = (255, 255, 51)
+TARGET_COLOR = (0, 0, 0)
+
+PATH_COLOR = (51, 153, 255)
+QUEUED_COLOR = (0, 153, 0)
+VISITED_COLOR = (153, 255, 153)
+BACKGROUND_COLOR = (169, 169, 169)
 
 # Constants
 WINDOW_WIDTH = 1000
@@ -33,12 +33,28 @@ class Box:
         self.start = False
         self.wall = False
         self.target = False
+        self.queued = False
+        self.visited = False
+        self.neighbours = []
+        self.prior = None
+
+    def set_neighbours(self):
+        if self.x > 0:
+            self.neighbours.append(GRID[self.x - 1][self.y])
+        if self.x < COLUMNS - 1:
+            self.neighbours.append(GRID[self.x + 1][self.y])
+
+        if self.y > 0:
+            self.neighbours.append(GRID[self.x][self.y - 1])
+        if self.y < ROWS - 1:
+            self.neighbours.append(GRID[self.x][self.y + 1])
 
     def draw(self, window, color):
         """Draw the box."""
         pygame.draw.rect(window, color, (self.x * BOX_WIDTH, self.y * BOX_HEIGHT, BOX_WIDTH - MARGIN, BOX_HEIGHT - MARGIN))
 
 
+# Define grid
 for i in range(COLUMNS):
     arr = []
     for j in range(ROWS):
@@ -46,12 +62,21 @@ for i in range(COLUMNS):
     GRID.append(arr)
 
 
+# Set neighbours
+for i in range(COLUMNS):
+    for j in range(ROWS):
+        GRID[i][j].set_neighbours()
+
+
 def main() -> None:
     pygame.init()
 
-    start_searching = False
+    start_dijkstra = False
+    searching = True
     start_defined = False
     target_defined = False
+    target_box = None
+    start_box = None
 
     window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption("Path Algorithm")
@@ -73,6 +98,8 @@ def main() -> None:
                     start_box = GRID[i][j]
                     start_box.start = True
                     start_defined = True
+                    start_box.visited = True
+                    QUEUE.append(start_box)
                     print("Start defined.")
 
                 # Define target box
@@ -98,20 +125,53 @@ def main() -> None:
 
             # Start Searching
             if event.type == pygame.KEYDOWN and start_defined and target_defined:
-                start_searching = True
+                if event.key == pygame.K_d:
+                    start_dijkstra = True
+                    print("Start Searching!")
+
+                # TODO: Add other path finding algorithms
+
+        # Run dijkstra path finding algorithm:
+        if start_dijkstra:
+            if len(QUEUE) > 0 and searching:
+                current_box = QUEUE.pop(0)
+                current_box.visited = True
+                if current_box == target_box:
+                    searching = True
+                    while current_box.prior != start_box:
+                        PATH.append(current_box.prior)
+                        current_box = current_box.prior
+                else:
+                    for neighbour in current_box.neighbours:
+                        if not neighbour.queued and not neighbour.wall:
+                            neighbour.prior = current_box
+                            neighbour.queued = True
+                            QUEUE.append(neighbour)
+
+            else:
+                if searching:
+                    print("There is no solution found.")
+                    searching = False
 
         window.fill((0, 0, 0))
 
         for i in range(COLUMNS):
             for j in range(ROWS):
                 box = GRID[i][j]
-                box.draw(window, GREY)
+                box.draw(window, BACKGROUND_COLOR)
+
+                if box.queued:
+                    box.draw(window, QUEUED_COLOR)
+                if box.visited:
+                    box.draw(window, VISITED_COLOR)
+                if box in PATH:
+                    box.draw(window, PATH_COLOR)
                 if box.start:
-                    box.draw(window, YELLOW)
+                    box.draw(window, START_COLOR)
                 if box.target:
-                    box.draw(window, GREEN)
+                    box.draw(window, TARGET_COLOR)
                 if box.wall:
-                    box.draw(window, DARK_GREY)
+                    box.draw(window, WALL_COLOR)
 
         pygame.display.flip()
 
