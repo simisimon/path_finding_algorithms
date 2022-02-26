@@ -71,7 +71,7 @@ for i in range(COLUMNS):
 def main() -> None:
     pygame.init()
 
-    start_dijkstra = False
+    start_searching = False
     searching = True
     start_defined = False
     target_defined = False
@@ -125,14 +125,14 @@ def main() -> None:
 
             # Start Searching
             if event.type == pygame.KEYDOWN and start_defined and target_defined:
-                if event.key == pygame.K_d:
-                    start_dijkstra = True
+                if event.key == pygame.K_SPACE:
+                    start_searching = True
                     print("Start Searching!")
 
                 # TODO: Add other path finding algorithms
 
         # Run dijkstra path finding algorithm:
-        if start_dijkstra:
+        if start_searching:
             if len(QUEUE) > 0 and searching:
                 current_box = QUEUE.pop(0)
                 current_box.visited = True
